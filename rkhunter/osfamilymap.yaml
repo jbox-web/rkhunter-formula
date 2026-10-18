@@ -28,7 +28,6 @@ Debian:
       - hidden_procs
       - packet_cap_apps
       - suspscan
-    disable_unhide: 1
     enable_tests: all
     mail-on-warning: root
     scriptwhitelist:
