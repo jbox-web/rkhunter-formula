@@ -1,0 +1,85 @@
+# -*- coding: utf-8 -*-
+# vim: ft=yaml
+---
+# Single CI for the jbox-web forks: lint the whole tree, then converge and
+# verify every Kitchen instance (suites x the fleet's Debian/Salt platforms).
+name: CI
+
+'on':
+  push:
+    branches:
+      - master
+  pull_request: {}
+  workflow_dispatch: {}
+
+permissions: {}
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  pre-commit:
+    name: Lint / pre-commit
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.13'
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '4.0'
+      - uses: actions/cache@v6
+        with:
+          path: ~/.cache/pre-commit
+          key: pre-commit|${{ hashFiles('.pre-commit-config.yaml') }}
+      - run: pip install pre-commit
+      - run: pre-commit run --all-files --show-diff-on-failure --color always
+
+  instances:
+    name: Prep / Kitchen instances
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    outputs:
+      instances: ${{ steps.list.outputs.instances }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '4.0'
+          bundler-cache: true
+      - id: list
+        run: |
+          echo "instances=$(bin/kitchen list --json | jq -c '[.[].instance]')" \
+            >> "$GITHUB_OUTPUT"
+
+  kitchen:
+    name: Test / ${{ matrix.instance }}
+    needs: instances
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        instance: ${{ fromJSON(needs.instances.outputs.instances) }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '4.0'
+          bundler-cache: true
+      - run: bin/kitchen test "${{ matrix.instance }}" --destroy=always
