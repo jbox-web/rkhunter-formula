@@ -17,7 +17,8 @@ control 'Rkhunter configuration' do
     describe file('/etc/rkhunter.conf') do
       # Default config
       its('content') { should include 'AUTO_X_DETECT=1' }
-      its('content') { should include 'DISABLE_UNHIDE=1' }
+      # Unknown to rkhunter 1.4.6 (Debian 11 and 13): not written on Debian
+      its('content') { should_not include 'DISABLE_UNHIDE' }
       its('content') { should include 'DBDIR=/var/lib/rkhunter/db' }
       its('content') { should include 'SCRIPTWHITELIST=/bin/egrep' }
       its('content') { should include 'SCRIPTWHITELIST=/bin/fgrep' }
