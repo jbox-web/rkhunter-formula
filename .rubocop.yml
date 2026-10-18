@@ -18,6 +18,14 @@ Security/YAMLLoad:
 
 # General settings across all cops in this formula
 AllCops:
+  # Bundler-generated binstubs: rewritten by `bundle binstubs`, not by hand
+  Exclude:
+    - bin/**/*
   NewCops: enable
 
 # Any offenses that should be fixed, e.g. collected via. `rubocop --auto-gen-config`
+
+# Add to the default `AllCops: Exclude` list instead of replacing it
+inherit_mode:
+  merge:
+    - Exclude
