@@ -31,10 +31,12 @@ platforms:
     driver:
       image: saltimages/salt-3006.27-py3:debian-11
       run_command: /lib/systemd/systemd
-      # bullseye-security still indexes packages purged from its pool since the
-      # end of LTS (2026-08-31); production Debian 11 hosts do not use it either.
+      # Since the end of LTS (2026-08-31) deb.debian.org still indexes
+      # bullseye-security, but its packages moved to archive.debian.org.
       provision_command:
-        - sed -i '/bullseye-security/d' /etc/apt/sources.list && apt-get update
+        - >-
+          sed -i 's#deb.debian.org/debian-security#archive.debian.org/debian-security#'
+          /etc/apt/sources.list && apt-get update
 
 verifier:
   # https://www.inspec.io/
